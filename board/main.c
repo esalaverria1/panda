@@ -48,6 +48,7 @@ struct __attribute__((packed)) health_t {
   uint8_t fault_status_pkt;
   uint8_t power_save_enabled_pkt;
   uint8_t heartbeat_lost_pkt;
+  uint8_t fan_power;
 };
 
 
@@ -186,6 +187,7 @@ int get_health_pkt(void *dat) {
   health->fault_status_pkt = fault_status;
   health->faults_pkt = faults;
 
+  health->fan_power = fan_state.power;
   return sizeof(*health);
 }
 
@@ -280,12 +282,12 @@ int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp) {
       break;
     // **** 0xb1: set fan power
     case 0xb1:
-      current_board->set_fan_power(setup->b.wValue.w);
+      fan_set_power(setup->b.wValue.w);
       break;
     // **** 0xb2: get fan rpm
     case 0xb2:
-      resp[0] = (fan_rpm & 0x00FFU);
-      resp[1] = ((fan_rpm & 0xFF00U) >> 8U);
+      resp[0] = (fan_state.rpm & 0x00FFU);
+      resp[1] = ((fan_state.rpm & 0xFF00U) >> 8U);
       resp_len = 2;
       break;
     // **** 0xb3: set phone power
@@ -637,6 +639,9 @@ void tick_handler(void) {
     // siren
     current_board->set_siren((loop_counter & 1U) && (siren_enabled || (siren_countdown > 0U)));
 
+    // tick drivers
+    fan_tick();
+
     // decimated to 1Hz
     if (loop_counter == 0U) {
       can_live = pending_can_live;
@@ -656,9 +661,6 @@ void tick_handler(void) {
         puts("tx2:"); puth4(can_tx2_q.r_ptr); puts("-"); puth4(can_tx2_q.w_ptr); puts("  ");
         puts("tx3:"); puth4(can_tx3_q.r_ptr); puts("-"); puth4(can_tx3_q.w_ptr); puts("\n");
       #endif
-
-      // Tick drivers
-      fan_tick();
 
       // set green LED to be controls allowed
       current_board->set_led(LED_GREEN, controls_allowed | green_led_enabled);
@@ -722,10 +724,15 @@ void tick_handler(void) {
           current_board->set_ir_power(0U);
 
           // If enumerated but no heartbeat (phone up, boardd not running), turn the fan on to cool the device
+<<<<<<< HEAD
           if(usb_enumerated()){
             current_board->set_fan_power(50U);
+=======
+          if(usb_enumerated){
+            fan_set_power(50U);
+>>>>>>> ba87721 (Simple integrating fan controller (#1022))
           } else {
-            current_board->set_fan_power(0U);
+            fan_set_power(0U);
           }
         }
 
@@ -869,6 +876,26 @@ int main(void) {
         }
       #endif
     } else {
+<<<<<<< HEAD
+=======
+      if (deepsleep_allowed && !usb_enumerated && !check_started() && ignition_seen && (heartbeat_counter > 20U)) {
+        usb_soft_disconnect(true);
+        fan_set_power(0U);
+        current_board->set_usb_power_mode(USB_POWER_CLIENT);
+        NVIC_DisableIRQ(TICK_TIMER_IRQ);
+        delay(512000U);
+
+        // Init IRQs for CAN transceiver and ignition line
+        exti_irq_init();
+
+        // Init RTC Wakeup event on EXTI22
+        REGISTER_INTERRUPT(RTC_WKUP_IRQn, RTC_WKUP_IRQ_Handler, 10U, FAULT_INTERRUPT_RATE_EXTI)
+        rtc_wakeup_init();
+
+        // STOP mode
+        SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+      }
+>>>>>>> ba87721 (Simple integrating fan controller (#1022))
       __WFI();
     }
   }

@@ -375,6 +375,7 @@ class Panda(object):
       "fault_status": a[16],
       "power_save_enabled": a[17],
       "heartbeat_lost": a[18],
+      "fan_power": a[22],
     }
 
   # ******************* control *******************
