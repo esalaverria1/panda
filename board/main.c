@@ -724,13 +724,9 @@ void tick_handler(void) {
           current_board->set_ir_power(0U);
 
           // If enumerated but no heartbeat (phone up, boardd not running), turn the fan on to cool the device
-<<<<<<< HEAD
-          if(usb_enumerated()){
-            current_board->set_fan_power(50U);
-=======
+
           if(usb_enumerated){
             fan_set_power(50U);
->>>>>>> ba87721 (Simple integrating fan controller (#1022))
           } else {
             fan_set_power(0U);
           }
@@ -876,26 +872,6 @@ int main(void) {
         }
       #endif
     } else {
-<<<<<<< HEAD
-=======
-      if (deepsleep_allowed && !usb_enumerated && !check_started() && ignition_seen && (heartbeat_counter > 20U)) {
-        usb_soft_disconnect(true);
-        fan_set_power(0U);
-        current_board->set_usb_power_mode(USB_POWER_CLIENT);
-        NVIC_DisableIRQ(TICK_TIMER_IRQ);
-        delay(512000U);
-
-        // Init IRQs for CAN transceiver and ignition line
-        exti_irq_init();
-
-        // Init RTC Wakeup event on EXTI22
-        REGISTER_INTERRUPT(RTC_WKUP_IRQn, RTC_WKUP_IRQ_Handler, 10U, FAULT_INTERRUPT_RATE_EXTI)
-        rtc_wakeup_init();
-
-        // STOP mode
-        SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
-      }
->>>>>>> ba87721 (Simple integrating fan controller (#1022))
       __WFI();
     }
   }
